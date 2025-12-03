@@ -41,8 +41,11 @@ public class NavMeshManager : MonoBehaviour
     [Header("Status")]
     public bool isBaking = false;
 
+    [Header("References")]
+    [Tooltip("Optional reference to OffMeshLinkAutoCreator (will auto-find if not set)")]
+    public OffMeshLinkAutoCreator linkCreator;
+
     private List<NavMeshSurface> surfaces = new List<NavMeshSurface>();
-    private OffMeshLinkAutoCreator linkCreator;
 
     private void Awake()
     {
@@ -56,6 +59,12 @@ public class NavMeshManager : MonoBehaviour
 
     private void Start()
     {
+        // Cache reference to link creator if not set
+        if (linkCreator == null)
+        {
+            linkCreator = FindObjectOfType<OffMeshLinkAutoCreator>();
+        }
+
         if (bakeOnStart)
         {
             StartCoroutine(InitialBakeCoroutine());
@@ -172,7 +181,6 @@ public class NavMeshManager : MonoBehaviour
         NavMeshSurfaceUtilities.RefreshSurfacesCache();
 
         // Automatically create off-mesh links if the component exists
-        linkCreator = FindObjectOfType<OffMeshLinkAutoCreator>();
         if (linkCreator != null)
         {
             linkCreator.CreateLinks();

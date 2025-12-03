@@ -36,6 +36,7 @@ public class OffMeshLinkAutoCreator : MonoBehaviour
     public bool debugVisualization = true;
     public Color linkColor = Color.cyan;
 
+    private const int edgeSamplesPerSide = 4; // Number of edge sides to distribute samples
     private List<NavMeshLink> createdLinks = new List<NavMeshLink>();
 
     private void Start()
@@ -141,7 +142,7 @@ public class OffMeshLinkAutoCreator : MonoBehaviour
         samples.Add(new Vector3(max.x, center.y, max.z));
 
         // Add edge samples
-        int edgeSamples = Mathf.Max(1, samplesPerSurface / 4);
+        int edgeSamples = Mathf.Max(1, samplesPerSurface / edgeSamplesPerSide);
         for (int i = 0; i < edgeSamples; i++)
         {
             float t = (float)i / edgeSamples;

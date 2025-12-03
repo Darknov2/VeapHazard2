@@ -205,17 +205,20 @@ creator.CreateLinks();
 
 **Custom Agent Types:**
 Create custom NavMesh agent types for different NPC sizes:
-1. Window > AI > Navigation (Legacy, may show as "Obsolete" in newer Unity versions)
+1. Window > AI > Navigation
+   - In Unity 2022+: Access via the AI Navigation package settings
+   - In older Unity versions: May be labeled as "Navigation (Obsolete)"
 2. Navigate to the "Agents" tab
-3. Create new agent type with appropriate size
-4. Reference in NavMeshSurface and NavMeshAgent components
-Note: In newer Unity versions, agent settings can also be configured through the Navigation package settings.
+3. Create new agent type with appropriate radius, height, and step height
+4. Reference the agent type in NavMeshSurface and NavMeshAgent components
 
 **Area Types:**
 Define custom area types for different terrain costs:
-1. Window > AI > Navigation (Legacy) > Areas tab
-2. Configure costs for different area types
-3. Use in NavMeshSurface and CaveTrigger components
+1. Window > AI > Navigation > Areas tab
+2. Create custom area types (e.g., "Cave", "Water", "Cliff")
+3. Configure movement costs for each area type (higher cost = less preferred path)
+4. Use area types in NavMeshSurface (during baking) and CaveTrigger components
+5. NPCs will automatically prefer lower-cost paths when calculating routes
 
 **Off-Mesh Link Curves:**
 Customize the jump arc in NPCNavigator:

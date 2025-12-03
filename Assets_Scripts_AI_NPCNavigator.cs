@@ -32,6 +32,9 @@ public class NPCNavigator : MonoBehaviour
     [Tooltip("Speed multiplier when traversing off-mesh links")]
     public float offMeshLinkSpeed = 1.5f;
 
+    [Tooltip("Height of the jump arc when traversing off-mesh links")]
+    public float offMeshLinkArcHeight = 1.5f;
+
     [Tooltip("Curve for off-mesh link movement (parabolic jump)")]
     public AnimationCurve offMeshLinkCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
@@ -316,7 +319,7 @@ public class NPCNavigator : MonoBehaviour
 
             // Interpolate position with height arc
             Vector3 position = Vector3.Lerp(startPos, endPos, t);
-            position.y += Mathf.Sin(curveT * Mathf.PI) * 1.5f; // Add jump arc
+            position.y += Mathf.Sin(curveT * Mathf.PI) * offMeshLinkArcHeight; // Add jump arc
 
             agent.transform.position = position;
 
