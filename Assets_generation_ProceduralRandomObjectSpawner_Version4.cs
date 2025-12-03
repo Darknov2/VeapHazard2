@@ -77,6 +77,9 @@ public class ProceduralRandomObjectSpawner : MonoBehaviour
     [Tooltip("Padding to expand spawned object bounds for overlap detection.")]
     public float prefabOverlapPadding = 0.02f;
 
+    // Threshold for determining when two positions are coincident (used in push direction calculation)
+    private const float CoincidentThreshold = 0.001f;
+
     [Header("Spawn Timing")]
     [Tooltip("Extra delay after terrain reports ready (seconds).")]
     public float spawnDelaySeconds = 0.1f;
@@ -422,7 +425,7 @@ public class ProceduralRandomObjectSpawner : MonoBehaviour
             Vector3 pushDirection = terrainCenter - spawnCenter;
             
             // If centers are coincident, push upward as a fallback
-            if (pushDirection.sqrMagnitude < 0.001f)
+            if (pushDirection.sqrMagnitude < CoincidentThreshold * CoincidentThreshold)
             {
                 pushDirection = Vector3.up;
             }
@@ -459,7 +462,7 @@ public class ProceduralRandomObjectSpawner : MonoBehaviour
         bounds = new Bounds();
         bool hasBounds = false;
 
-        // Check renderers
+        // Check all renderers
         Renderer[] renderers = go.GetComponentsInChildren<Renderer>();
         foreach (var renderer in renderers)
         {
@@ -477,24 +480,21 @@ public class ProceduralRandomObjectSpawner : MonoBehaviour
             }
         }
 
-        // Check colliders if no renderers found
-        if (!hasBounds)
+        // Also check all colliders (not just as fallback) to ensure complete coverage
+        Collider[] colliders = go.GetComponentsInChildren<Collider>();
+        foreach (var collider in colliders)
         {
-            Collider[] colliders = go.GetComponentsInChildren<Collider>();
-            foreach (var collider in colliders)
-            {
-                if (collider == null || !collider.enabled)
-                    continue;
+            if (collider == null || !collider.enabled)
+                continue;
 
-                if (!hasBounds)
-                {
-                    bounds = collider.bounds;
-                    hasBounds = true;
-                }
-                else
-                {
-                    bounds.Encapsulate(collider.bounds);
-                }
+            if (!hasBounds)
+            {
+                bounds = collider.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(collider.bounds);
             }
         }
 
