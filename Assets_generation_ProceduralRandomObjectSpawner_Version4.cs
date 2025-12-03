@@ -419,11 +419,17 @@ public class ProceduralRandomObjectSpawner : MonoBehaviour
             Vector3 terrainCenter = terrainCollider.bounds.center;
 
             // Calculate push direction (from spawn center to terrain center)
-            Vector3 pushDirection = (terrainCenter - spawnCenter).normalized;
+            Vector3 pushDirection = terrainCenter - spawnCenter;
             
             // If centers are coincident, push upward as a fallback
             if (pushDirection.sqrMagnitude < 0.001f)
+            {
                 pushDirection = Vector3.up;
+            }
+            else
+            {
+                pushDirection.Normalize();
+            }
 
             // Iteratively push the terrain piece until it no longer intersects
             for (int iteration = 0; iteration < maxPushIterations; iteration++)
@@ -435,12 +441,8 @@ public class ProceduralRandomObjectSpawner : MonoBehaviour
                 // Push the terrain piece
                 terrainCollider.transform.position += pushDirection * pushStep;
 
-                // Attempt to refresh the MeshCollider if present
-                // This is a generic approach that may or may not trigger a physics update
-                if (terrainCollider is MeshCollider meshCollider && meshCollider.sharedMesh != null)
-                {
-                    meshCollider.sharedMesh = meshCollider.sharedMesh;
-                }
+                // Force physics system to update transforms for accurate bounds in next iteration
+                Physics.SyncTransforms();
             }
         }
     }
