@@ -205,13 +205,15 @@ creator.CreateLinks();
 
 **Custom Agent Types:**
 Create custom NavMesh agent types for different NPC sizes:
-1. Window > AI > Navigation (Obsolete) > Agents tab
-2. Create new agent type with appropriate size
-3. Reference in NavMeshSurface and NavMeshAgent components
+1. Window > AI > Navigation (Legacy, may show as "Obsolete" in newer Unity versions)
+2. Navigate to the "Agents" tab
+3. Create new agent type with appropriate size
+4. Reference in NavMeshSurface and NavMeshAgent components
+Note: In newer Unity versions, agent settings can also be configured through the Navigation package settings.
 
 **Area Types:**
 Define custom area types for different terrain costs:
-1. Window > AI > Navigation (Obsolete) > Areas tab
+1. Window > AI > Navigation (Legacy) > Areas tab
 2. Configure costs for different area types
 3. Use in NavMeshSurface and CaveTrigger components
 

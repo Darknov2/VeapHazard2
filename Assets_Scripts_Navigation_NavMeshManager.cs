@@ -168,6 +168,9 @@ public class NavMeshManager : MonoBehaviour
     {
         Debug.Log("NavMeshManager: Baking complete.");
 
+        // Refresh the surfaces cache since baking may have changed them
+        NavMeshSurfaceUtilities.RefreshSurfacesCache();
+
         // Automatically create off-mesh links if the component exists
         linkCreator = FindObjectOfType<OffMeshLinkAutoCreator>();
         if (linkCreator != null)

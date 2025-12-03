@@ -7,18 +7,22 @@ using Unity.AI.Navigation;
 /// </summary>
 public static class NavMeshSurfaceUtilities
 {
+    private static NavMeshSurface[] cachedSurfaces = null;
+    private static float lastCacheTime = 0f;
+    private const float cacheValidDuration = 2f; // Cache for 2 seconds
+
     /// <summary>
     /// Find the nearest NavMeshSurface component to the given world position.
     /// </summary>
     public static NavMeshSurface GetNearestSurface(Vector3 position)
     {
-        NavMeshSurface[] surfaces = Object.FindObjectsOfType<NavMeshSurface>();
+        NavMeshSurface[] surfaces = GetCachedSurfaces();
         NavMeshSurface nearest = null;
         float minDistance = float.MaxValue;
 
         foreach (var surface in surfaces)
         {
-            if (surface.navMeshData == null) continue;
+            if (surface == null || surface.navMeshData == null) continue;
 
             float distance = Vector3.Distance(position, surface.transform.position);
             if (distance < minDistance)
@@ -29,6 +33,27 @@ public static class NavMeshSurfaceUtilities
         }
 
         return nearest;
+    }
+
+    /// <summary>
+    /// Get cached surfaces or refresh cache if needed.
+    /// </summary>
+    private static NavMeshSurface[] GetCachedSurfaces()
+    {
+        if (cachedSurfaces == null || Time.time - lastCacheTime > cacheValidDuration)
+        {
+            cachedSurfaces = Object.FindObjectsOfType<NavMeshSurface>();
+            lastCacheTime = Time.time;
+        }
+        return cachedSurfaces;
+    }
+
+    /// <summary>
+    /// Force refresh the surfaces cache.
+    /// </summary>
+    public static void RefreshSurfacesCache()
+    {
+        cachedSurfaces = null;
     }
 
     /// <summary>
@@ -96,10 +121,10 @@ public static class NavMeshSurfaceUtilities
     }
 
     /// <summary>
-    /// Find all NavMeshSurface components in the scene.
+    /// Find all NavMeshSurface components in the scene (uses cached results).
     /// </summary>
     public static NavMeshSurface[] FindAllSurfaces()
     {
-        return Object.FindObjectsOfType<NavMeshSurface>();
+        return GetCachedSurfaces();
     }
 }

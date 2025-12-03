@@ -205,27 +205,9 @@ public class NPCNavigator : MonoBehaviour
         Vector3 toTarget = fallbackTarget - transform.position;
         float distance = toTarget.magnitude;
 
-        // Check if we can return to NavMesh (every 0.5 seconds)
-        if (agent.isOnNavMesh && Time.time - lastNavMeshCheckTime > 0.5f)
+        // Check if we should exit fallback mode
+        if (ShouldExitFallbackMode(distance))
         {
-            lastNavMeshCheckTime = Time.time;
-            ExitFallbackMode();
-            return;
-        }
-
-        // Give up if too far
-        if (distance > fallbackMaxDistance)
-        {
-            if (debugLogs) Debug.LogWarning("NPCNavigator: Fallback target too far, giving up");
-            ExitFallbackMode();
-            return;
-        }
-
-        // Check if we reached the target
-        if (distance < destinationThreshold)
-        {
-            if (debugLogs) Debug.Log("NPCNavigator: Reached fallback target");
-            ExitFallbackMode();
             return;
         }
 
@@ -240,6 +222,50 @@ public class NPCNavigator : MonoBehaviour
             transform.position = navPos;
             ExitFallbackMode();
         }
+    }
+
+    /// <summary>
+    /// Check if we should exit fallback mode based on current conditions.
+    /// </summary>
+    private bool ShouldExitFallbackMode(float distanceToTarget)
+    {
+        // Check if we reached the target
+        if (distanceToTarget < destinationThreshold)
+        {
+            if (debugLogs) Debug.Log("NPCNavigator: Reached fallback target");
+            ExitFallbackMode();
+            return true;
+        }
+
+        // Give up if too far
+        if (distanceToTarget > fallbackMaxDistance)
+        {
+            if (debugLogs) Debug.LogWarning("NPCNavigator: Fallback target too far, giving up");
+            ExitFallbackMode();
+            return true;
+        }
+
+        // Check if we can return to NavMesh with valid path (every 0.5 seconds)
+        if (Time.time - lastNavMeshCheckTime > 0.5f)
+        {
+            lastNavMeshCheckTime = Time.time;
+            
+            if (agent.isOnNavMesh && targetDestination != null)
+            {
+                // Try to calculate a path to verify we can actually navigate
+                NavMeshPath testPath = new NavMeshPath();
+                if (NavMesh.CalculatePath(transform.position, targetDestination.position, NavMesh.AllAreas, testPath))
+                {
+                    if (testPath.status != NavMeshPathStatus.PathInvalid)
+                    {
+                        ExitFallbackMode();
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

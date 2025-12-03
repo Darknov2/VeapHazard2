@@ -121,7 +121,7 @@ public class CaveTrigger : MonoBehaviour
         if (exteriorSurface != null) return exteriorSurface;
 
         // Try to auto-find exterior surface (the first surface that's not this cave)
-        NavMeshSurface[] surfaces = FindObjectsOfType<NavMeshSurface>();
+        NavMeshSurface[] surfaces = NavMeshSurfaceUtilities.FindAllSurfaces();
         foreach (var surface in surfaces)
         {
             if (surface != caveSurface)
