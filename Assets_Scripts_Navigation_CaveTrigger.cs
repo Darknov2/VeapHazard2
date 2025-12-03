@@ -1,10 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
-#if UNITY_EDITOR
 using Unity.AI.Navigation;
-#else
-using Unity.AI.Navigation;
-#endif
 
 /// <summary>
 /// Attach this component to cave entrance trigger colliders.

@@ -1,10 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
-#if UNITY_EDITOR
 using Unity.AI.Navigation;
-#else
-using Unity.AI.Navigation;
-#endif
 
 /// <summary>
 /// Helper utilities for working with NavMesh surfaces and finding nearest walkable positions.

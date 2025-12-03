@@ -2,11 +2,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
 using System.Collections.Generic;
-#if UNITY_EDITOR
 using Unity.AI.Navigation;
-#else
-using Unity.AI.Navigation;
-#endif
 
 /// <summary>
 /// Singleton manager for NavMesh surfaces. Handles runtime baking of all NavMeshSurface components

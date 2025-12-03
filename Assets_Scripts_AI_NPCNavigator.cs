@@ -1,11 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
-#if UNITY_EDITOR
 using Unity.AI.Navigation;
-#else
-using Unity.AI.Navigation;
-#endif
 
 /// <summary>
 /// Main NPC navigation controller that wraps NavMeshAgent.
@@ -59,6 +55,8 @@ public class NPCNavigator : MonoBehaviour
     private Vector3 lastValidPosition;
     private bool isFallbackMode = false;
     private Vector3 fallbackTarget;
+    private float lastPathStatusLogTime = 0f;
+    private float lastNavMeshCheckTime = 0f;
 
     private void Awake()
     {
@@ -172,9 +170,10 @@ public class NPCNavigator : MonoBehaviour
         else if (status == NavMeshPathStatus.PathPartial)
         {
             // Partial path is okay for now, but monitor it
-            if (debugLogs && Time.frameCount % 60 == 0)
+            if (debugLogs && Time.time - lastPathStatusLogTime > 1.0f)
             {
                 Debug.Log("NPCNavigator: Path partial, NPC may not reach final destination");
+                lastPathStatusLogTime = Time.time;
             }
         }
     }
@@ -206,9 +205,10 @@ public class NPCNavigator : MonoBehaviour
         Vector3 toTarget = fallbackTarget - transform.position;
         float distance = toTarget.magnitude;
 
-        // Check if we can return to NavMesh
-        if (agent.isOnNavMesh && Time.frameCount % 30 == 0)
+        // Check if we can return to NavMesh (every 0.5 seconds)
+        if (agent.isOnNavMesh && Time.time - lastNavMeshCheckTime > 0.5f)
         {
+            lastNavMeshCheckTime = Time.time;
             ExitFallbackMode();
             return;
         }

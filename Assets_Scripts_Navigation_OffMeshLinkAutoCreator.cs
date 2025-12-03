@@ -1,11 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
-#if UNITY_EDITOR
 using Unity.AI.Navigation;
-#else
-using Unity.AI.Navigation;
-#endif
 
 /// <summary>
 /// Automatically creates NavMeshLink components between nearby NavMeshSurface boundaries.
