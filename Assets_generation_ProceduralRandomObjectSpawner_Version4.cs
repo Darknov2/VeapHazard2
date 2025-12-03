@@ -3,6 +3,24 @@ using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
+/// Serializable settings for structure/object spawning.
+/// </summary>
+[System.Serializable]
+public class StructureSpawnSettings
+{
+    [Tooltip("Prefab to spawn")]
+    public GameObject prefab;
+    [Tooltip("Number of objects to spawn")]
+    public int objectsToSpawn = 5;
+    [Tooltip("Whether children colliders affect other spawns")]
+    public bool childrenAffectOthers = true;
+    [Tooltip("Whether children are affected by overlap checks")]
+    public bool childrenAffectedByOverlap = true;
+    [Tooltip("Margin to shrink bounds for overlap checks")]
+    public float overlapMargin = 0.1f;
+}
+
+/// <summary>
 /// Random object spawner adapted to ProceduralTerrainGenerator.
 /// - Adds three spawn categories: vegetation (surface), underground (below surface), floating islands (above surface).
 /// - Uses the same StructureSpawnSettings type you already have; separate lists per category let you tune each group in the inspector.
@@ -48,6 +66,16 @@ public class ProceduralRandomObjectSpawner : MonoBehaviour
     public float floatingMaxHeight = 30f;
     [Tooltip("If true, floating spawn will only succeed if the chosen position has no overlapping colliders.")]
     public bool floatingRequireEmptySpace = true;
+
+    [Header("Marching Cubes Push Settings")]
+    [Tooltip("Layer mask for marching cubes terrain pieces to detect and push.")]
+    public LayerMask marchingCubesLayer;
+    [Tooltip("Distance to push terrain pieces per iteration (world units).")]
+    public float pushStep = 0.5f;
+    [Tooltip("Maximum number of push iterations per terrain piece.")]
+    public int maxPushIterations = 6;
+    [Tooltip("Padding to expand spawned object bounds for overlap detection.")]
+    public float prefabOverlapPadding = 0.02f;
 
     [Header("Spawn Timing")]
     [Tooltip("Extra delay after terrain reports ready (seconds).")]
@@ -254,6 +282,9 @@ public class ProceduralRandomObjectSpawner : MonoBehaviour
                         placedColliders.Add((c, setting));
                 }
 
+                // Resolve marching cubes terrain overlap for this spawned object
+                ResolveMarchingCubesOverlap(obj);
+
                 placedCells.Add(cell);
             }
         }
@@ -346,5 +377,139 @@ public class ProceduralRandomObjectSpawner : MonoBehaviour
     {
         float[] angles = { 0f, 90f, 180f, 270f };
         return angles[Random.Range(0, angles.Length)];
+    }
+
+    /// <summary>
+    /// Detects marching-cubes terrain pieces that overlap a spawned prefab and pushes them outward.
+    /// This is a generic, low-effort approach to prevent terrain from intersecting spawned objects.
+    /// For a more robust solution, consider using a terrain carving/modification API if available.
+    /// </summary>
+    /// <param name="spawned">The spawned GameObject to check for terrain overlaps.</param>
+    private void ResolveMarchingCubesOverlap(GameObject spawned)
+    {
+        // Skip if no marching cubes layer is configured
+        if (marchingCubesLayer == 0)
+            return;
+
+        // Get world bounds of the spawned object
+        if (!GetWorldBounds(spawned, out Bounds spawnBounds))
+            return;
+
+        // Expand bounds by padding to ensure terrain pieces near the boundary are also pushed
+        spawnBounds.Expand(prefabOverlapPadding * 2f);
+
+        // Find all colliders in the marching cubes layer that overlap the spawn bounds
+        Collider[] overlappingColliders = Physics.OverlapBox(
+            spawnBounds.center,
+            spawnBounds.extents,
+            Quaternion.identity,
+            marchingCubesLayer
+        );
+
+        if (overlappingColliders == null || overlappingColliders.Length == 0)
+            return;
+
+        // For each overlapping terrain piece, push it away from the spawn center
+        foreach (var terrainCollider in overlappingColliders)
+        {
+            if (terrainCollider == null || terrainCollider.transform == null)
+                continue;
+
+            Vector3 spawnCenter = spawnBounds.center;
+            Vector3 terrainCenter = terrainCollider.bounds.center;
+
+            // Calculate push direction (from spawn center to terrain center)
+            Vector3 pushDirection = (terrainCenter - spawnCenter).normalized;
+            
+            // If centers are coincident, push upward as a fallback
+            if (pushDirection.sqrMagnitude < 0.001f)
+                pushDirection = Vector3.up;
+
+            // Iteratively push the terrain piece until it no longer intersects
+            for (int iteration = 0; iteration < maxPushIterations; iteration++)
+            {
+                // Check if still intersecting
+                if (!ColliderIntersectsBounds(terrainCollider, spawnBounds))
+                    break;
+
+                // Push the terrain piece
+                terrainCollider.transform.position += pushDirection * pushStep;
+
+                // Attempt to refresh the MeshCollider if present
+                // This is a generic approach that may or may not trigger a physics update
+                if (terrainCollider is MeshCollider meshCollider && meshCollider.sharedMesh != null)
+                {
+                    meshCollider.sharedMesh = meshCollider.sharedMesh;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Computes the world-space axis-aligned bounding box for a GameObject.
+    /// Includes all renderers and colliders in the hierarchy.
+    /// </summary>
+    /// <param name="go">The GameObject to compute bounds for.</param>
+    /// <param name="bounds">Output bounds in world space.</param>
+    /// <returns>True if bounds were successfully computed, false otherwise.</returns>
+    private bool GetWorldBounds(GameObject go, out Bounds bounds)
+    {
+        bounds = new Bounds();
+        bool hasBounds = false;
+
+        // Check renderers
+        Renderer[] renderers = go.GetComponentsInChildren<Renderer>();
+        foreach (var renderer in renderers)
+        {
+            if (renderer == null || !renderer.enabled)
+                continue;
+
+            if (!hasBounds)
+            {
+                bounds = renderer.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(renderer.bounds);
+            }
+        }
+
+        // Check colliders if no renderers found
+        if (!hasBounds)
+        {
+            Collider[] colliders = go.GetComponentsInChildren<Collider>();
+            foreach (var collider in colliders)
+            {
+                if (collider == null || !collider.enabled)
+                    continue;
+
+                if (!hasBounds)
+                {
+                    bounds = collider.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(collider.bounds);
+                }
+            }
+        }
+
+        return hasBounds;
+    }
+
+    /// <summary>
+    /// Checks if a collider's bounds intersect with the given bounds.
+    /// </summary>
+    /// <param name="c">The collider to check.</param>
+    /// <param name="b">The bounds to check against.</param>
+    /// <returns>True if the collider intersects the bounds, false otherwise.</returns>
+    private bool ColliderIntersectsBounds(Collider c, Bounds b)
+    {
+        if (c == null)
+            return false;
+
+        return c.bounds.Intersects(b);
     }
 }
